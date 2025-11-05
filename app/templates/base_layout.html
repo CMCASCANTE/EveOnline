@@ -112,7 +112,7 @@
             padding: 25px;
             border-radius: 12px;
             width: 90%;
-            max-width: 600px;
+            max-width: 800px; /* MODIFICADO para dar cabida a más tablas */
             box-shadow: 0 5px 15px rgba(0,0,0,0.7);
             position: relative;
             animation: slideIn 0.3s ease-out;
@@ -254,15 +254,16 @@
 
         /**
          * Maneja el clic en el botón de Análisis ESI, leyendo los atributos de datos 
-         * para obtener el type_id y el item_name.
+         * para obtener el type_id, item_name y market_name.
          * @param {HTMLElement} buttonElement El botón que fue presionado.
          */
         function handleOrderAnalysis(buttonElement) {
             const typeId = buttonElement.dataset.typeId;
             const itemName = buttonElement.dataset.itemName; 
+            const sourceMarketName = buttonElement.dataset.sourceMarketName; // <--- NUEVA LECTURA
             
             // Abre el modal y comienza el proceso de solicitud al servidor
-            generateOrderSummary(typeId, itemName);
+            generateOrderSummary(typeId, itemName, sourceMarketName); // <--- NUEVO PARÁMETRO
         }
 
         // --- Lógica Principal de la API (Paso 2: Llamada al servidor de Flask) ---
@@ -271,24 +272,29 @@
          * Muestra el modal, muestra la carga y hace la llamada AJAX al servidor de Flask.
          * @param {string} typeId El ID del tipo de item.
          * @param {string} itemName El nombre del item.
+         * @param {string} sourceMarketName El nombre del mercado donde se encontró el mejor resultado. <--- NUEVO PARÁMETRO
          */
-        async function generateOrderSummary(typeId, itemName) {
+        async function generateOrderSummary(typeId, itemName, sourceMarketName) {
             modalTitle.textContent = `Análisis de Órdenes: ${itemName}`;
             // Mensaje de carga actualizado para reflejar la consulta global
             modalBody.innerHTML = `
                 <div class="esi-loading-spinner">
                     <img src="https://placehold.co/50x50/1E90FF/000?text=ESI" alt="Spinner de Carga" style="border-radius: 50%; margin-bottom: 10px;">
-                    <span>Consultando Órdenes Globales (Jita, Dodixie, Amarr, Hek)...</span>
+                    <span>Consultando Órdenes Globales y el mercado **${sourceMarketName}**...</span>
                 </div>
             `;
             modal.style.display = 'block';
 
             try {
-                // LLAMADA ACTUALIZADA A LA NUEVA RUTA
+                // LLAMADA ACTUALIZADA ENVIANDO EL MERCADO FUENTE
                 const response = await fetch('/api/market-summary', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ type_id: typeId, item_name: itemName })
+                    body: JSON.stringify({ 
+                        type_id: typeId, 
+                        item_name: itemName,
+                        source_market_name: sourceMarketName // <--- NUEVO DATO ENVIADO
+                    })
                 });
 
                 if (!response.ok) {

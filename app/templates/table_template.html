@@ -38,20 +38,16 @@
 
                 <td>{{ "{:,.0f}".format(result.volume_10d) }}</td>
 
-                <!-- Columna IA ANÁLISIS (Usa data-attributes y llama a handleOrderAnalysis) -->
                 <td>
-                    <!-- 
-                        |e es el filtro 'escape', asegura que el nombre del item se inserte de forma segura en HTML 
-                        sin romper la estructura del data-attribute.
-                    -->
                     <button
                         data-type-id="{{ result.type_id }}"
                         data-item-name="{{ result.item_name | e }}"
+                        data-source-market-name="{{ result.market }}" {# <--- NUEVO ATRIBUTO: Pasa el mercado donde se encontró la mejor rentabilidad #}
                         onclick="handleOrderAnalysis(this)"
                         class="esi-button"
                     >
                         Ver Órdenes (ESI)
-                    </button>                 
+                    </button>
                 </td>
 
                 <td class="item-col">{{ result.item_name }} ({{ result.quantity }})</td>
@@ -59,4 +55,3 @@
         {% endfor %}
     </tbody>
 </table>
-

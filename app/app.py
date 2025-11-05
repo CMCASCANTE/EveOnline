@@ -15,6 +15,8 @@ MIN_ISK_PER_LP_FILTER_LOW = 1000
 MIN_ISK_PER_LP_FILTER_HIGH = 2000 
 # --- CONSTANTES ADICIONALES ---
 JITA_REGION_ID = 10000002 # ID de Jita
+# Tiempos de Volumen para el Modal
+VOLUME_TIMEFRAMES = [15, 10, 5] 
 
 # Definición de las regiones clave para el análisis
 MARKETS = {
@@ -279,90 +281,125 @@ def analyze():
     return render_template('analysis.html', data=analysis_data)
 
 # =========================================================
-# === NUEVA FUNCIÓN ESI PARA ÓRDENES Y VOLUMEN (Global, para el modal)
+# === NUEVAS FUNCIONES ESI PARA EL MODAL (Órdenes Globales/Específicas y Volumen Multi-días)
 # =========================================================
 
-def get_global_market_summary(type_id, markets=MARKETS, top_n=5):
+def get_market_history_volume(type_id, region_id):
+    """ Obtiene el volumen combinado para los periodos definidos. """
+    history_url = f"{ESI_BASE_URL}/markets/{region_id}/history/?datasource=tranquility&type_id={type_id}"
+    volumes = {days: 0 for days in VOLUME_TIMEFRAMES}
+    
+    try:
+        history_response = requests.get(history_url, timeout=10)
+        history_response.raise_for_status()
+        history_data = history_response.json()
+        
+        # Calcular los umbrales de tiempo
+        time_thresholds = {days: datetime.now() - timedelta(days=days) for days in VOLUME_TIMEFRAMES}
+        
+        for day in history_data:
+            date_obj = datetime.strptime(day['date'], '%Y-%m-%d')
+            
+            for days_key in VOLUME_TIMEFRAMES:
+                if date_obj >= time_thresholds[days_key]:
+                    volumes[days_key] += day['volume']
+                    
+    except requests.exceptions.RequestException:
+        pass 
+        
+    return volumes
+
+
+def get_market_orders(type_id, region_id, top_n=5):
     """
-    Obtiene las N órdenes de venta más baratas y N órdenes de compra más caras 
-    de todos los mercados clave, y el volumen combinado de 10 días por mercado.
+    Obtiene las N órdenes de venta más bajas y N órdenes de compra más altas 
+    para una región específica.
     """
+    orders_url = f"{ESI_BASE_URL}/markets/{region_id}/orders/?datasource=tranquility&type_id={type_id}"
+    
+    buy_orders = []
+    sell_orders = []
+    
+    try:
+        orders_response = requests.get(orders_url, timeout=15)
+        orders_response.raise_for_status()
+        all_orders = orders_response.json()
+        
+        for order in all_orders:
+            if order.get('price', 0) <= 0 or order.get('volume_remain', 0) <= 0:
+                continue
+                
+            order_data = {
+                'price': order['price'],
+                'volume': order['volume_remain'],
+                'location_id': order.get('location_id')
+            }
+            
+            if order.get('is_buy_order'):
+                buy_orders.append(order_data)
+            else:
+                sell_orders.append(order_data)
+                
+        sell_orders.sort(key=lambda x: x['price'])
+        buy_orders.sort(key=lambda x: x['price'], reverse=True)
+        
+        return sell_orders[:top_n], buy_orders[:top_n]
+
+    except requests.exceptions.RequestException:
+        return [], []
+
+
+def get_full_market_summary(type_id, source_market_name, markets=MARKETS, top_n=5):
+    """
+    Obtiene:
+    1. Órdenes globales TOP N (Venta más baratas y Compra más caras)
+    2. Órdenes específicas TOP N del mercado 'source_market_name'
+    3. Volumen multi-días (15, 10, 5) del mercado 'source_market_name'
+    """
+    
     all_sell_orders = []
     all_buy_orders = []
-    volume_by_market = {}
     
-    # 1. Obtener Órdenes y Volumen por Mercado
+    # 1. Obtener Órdenes Globales
     for market_name, region_id in markets.items():
-        # --- Obtener Órdenes (Global Orders) ---
-        orders_url = f"{ESI_BASE_URL}/markets/{region_id}/orders/?datasource=tranquility&type_id={type_id}"
-        try:
-            orders_response = requests.get(orders_url, timeout=15)
-            orders_response.raise_for_status()
-            all_orders = orders_response.json()
-            
-            for order in all_orders:
-                # Filtrar solo órdenes activas y con precio > 0
-                if order.get('price', 0) <= 0 or order.get('volume_remain', 0) <= 0:
-                    continue
-                    
-                order_data = {
-                    'price': order['price'],
-                    'volume': order['volume_remain'],
-                    'market': market_name,  # <--- AÑADIDO: Nombre del mercado
-                    'location_id': order.get('location_id')
-                }
-                
-                if order.get('is_buy_order'):
-                    all_buy_orders.append(order_data)
-                else:
-                    all_sell_orders.append(order_data)
-
-        except requests.exceptions.RequestException:
-            # Continuar si un mercado falla
-            pass 
+        # Consultamos muchas órdenes para tener un buen pool global
+        sell_orders_region, buy_orders_region = get_market_orders(type_id, region_id, top_n=1000) 
         
-        # --- Obtener Volumen (Combinado Buys/Sells) ---
-        # NOTA IMPORTANTE: ESI History no separa volumen de compra y venta. 
-        # Proporcionamos el TOTAL combinado de transacciones por mercado.
-        volume_by_market[market_name] = {'total_volume_10d': 0}
-
-        history_url = f"{ESI_BASE_URL}/markets/{region_id}/history/?datasource=tranquility&type_id={type_id}"
-        try:
-            history_response = requests.get(history_url, timeout=10)
-            history_response.raise_for_status()
-            history_data = history_response.json()
+        # Añadir el nombre del mercado a las órdenes para la visualización global
+        for order in sell_orders_region:
+            order['market'] = market_name
+        for order in buy_orders_region:
+            order['market'] = market_name
             
-            ten_days_ago = datetime.now() - timedelta(days=VOLUME_DAYS)
-            volume_10d = 0
-            
-            for day in history_data:
-                date_obj = datetime.strptime(day['date'], '%Y-%m-%d')
-                if date_obj >= ten_days_ago:
-                    volume_10d += day['volume'] 
-            
-            volume_by_market[market_name]['total_volume_10d'] = volume_10d
-
-        except requests.exceptions.RequestException:
-             # Si falla el historial, el volumen es 0 para ese mercado
-            pass 
-
-
+        all_sell_orders.extend(sell_orders_region)
+        all_buy_orders.extend(buy_orders_region)
+        
     # 2. Filtrar y Ordenar Globalmente
-    
-    # Órdenes de Venta: Ordenar por PRECIO ASCENDENTE (más baratas)
     all_sell_orders.sort(key=lambda x: x['price'])
-    top_sell_orders = all_sell_orders[:top_n]
+    top_global_sell_orders = all_sell_orders[:top_n]
     
-    # Órdenes de Compra: Ordenar por PRECIO DESCENDENTE (más caras)
     all_buy_orders.sort(key=lambda x: x['price'], reverse=True)
-    top_buy_orders = all_buy_orders[:top_n]
+    top_global_buy_orders = all_buy_orders[:top_n]
+    
+    
+    # 3. Obtener Órdenes del Mercado Específico
+    source_region_id = markets.get(source_market_name)
+    if not source_region_id:
+        return {"error": f"Mercado fuente '{source_market_name}' no encontrado."}, None, None
+        
+    # Aquí solo consultamos las 5 mejores del mercado específico
+    top_specific_sell_orders, top_specific_buy_orders = get_market_orders(type_id, source_region_id, top_n=top_n)
+    
+    
+    # 4. Obtener Volumen Multi-días del Mercado Específico
+    specific_volumes = get_market_history_volume(type_id, source_region_id)
 
     return {
-        'top_sell_orders': top_sell_orders,
-        'top_buy_orders': top_buy_orders,
-        'volume_by_market': volume_by_market,
-        'error': None
-    }
+        'top_global_sell_orders': top_global_sell_orders,
+        'top_global_buy_orders': top_global_buy_orders,
+        'top_specific_sell_orders': top_specific_sell_orders,
+        'top_specific_buy_orders': top_specific_buy_orders,
+    }, specific_volumes, source_market_name
 
 
 # =========================================================
@@ -372,94 +409,137 @@ def get_global_market_summary(type_id, markets=MARKETS, top_n=5):
 @app.route('/api/market-summary', methods=['POST'])
 def market_summary_api():
     """ 
-    Ruta para manejar la solicitud AJAX del modal. Obtiene órdenes TOP N globales 
-    y el volumen combinado por mercado.
+    Ruta para manejar la solicitud AJAX del modal.
     """
     data = request.get_json()
     type_id = data.get('type_id')
     item_name = data.get('item_name')
+    source_market_name = data.get('source_market_name') # <--- NUEVO DATO
     
-    if not type_id:
-        return jsonify({"summary_html": "<p>Error: ID de Item no proporcionado.</p>"}), 400
+    if not type_id or not source_market_name:
+        return jsonify({"summary_html": "<p>Error: ID de Item o Mercado no proporcionado.</p>"}), 400
 
     try:
         type_id_int = int(type_id)
     except ValueError:
         return jsonify({"summary_html": "<p>Error: ID de Item inválido.</p>"}), 400
 
-    # Llamada a la nueva función GLOBAL
-    market_data = get_global_market_summary(type_id_int, markets=MARKETS, top_n=5)
+    # Llamada a la nueva función
+    market_data, specific_volumes, source_market_name = get_full_market_summary(
+        type_id_int, 
+        source_market_name, 
+        markets=MARKETS, 
+        top_n=5
+    )
     
-    if market_data['error']:
+    if "error" in market_data:
         return jsonify({"summary_html": f"<p style='color: #ff3333;'>❌ Error ESI: {market_data['error']}</p>"}), 500
 
     
-    # Función de utilidad para formatear órdenes (ahora incluye el mercado)
-    def format_orders(orders):
-        # Usamos tabla para la estructura de 3 columnas
+    # Función de utilidad para formatear órdenes (ahora maneja órdenes específicas y globales)
+    def format_orders(orders, is_global):
+        # Usamos tabla para la estructura de 3 columnas (Global) o 2 (Específica)
         html = '<table style="width: 100%; border-collapse: collapse; font-size: 1.0em;">'
         html += '<tr style="border-bottom: 2px solid #555; font-size: 0.9em;">'
         html += '<th style="text-align: left; padding: 5px 0;">Precio</th>'
         html += '<th style="padding: 5px 0; text-align: center;">Volumen</th>'
-        html += '<th style="text-align: right; padding: 5px 0;">Mercado</th>'
+        if is_global:
+            html += '<th style="text-align: right; padding: 5px 0;">Mercado</th>'
         html += '</tr>'
         
         if not orders:
-             return "<p style='color: #888;'>No hay órdenes disponibles en los mercados clave.</p>"
+             return "<p style='color: #888;'>No hay órdenes disponibles.</p>"
              
+        # Usamos la lista global para determinar si es venta o compra
+        is_sell_order = orders == market_data.get('top_global_sell_orders') or orders == market_data.get('top_specific_sell_orders')
+        color = '#00ff00' if is_sell_order else '#ff3333'
+            
         for order in orders:
             price_formatted = "{:,.2f}".format(order['price'])
             volume_formatted = "{:,.0f}".format(order['volume'])
-            # Usamos verde para VENTA y rojo para COMPRA
-            color = '#00ff00' if orders == market_data['top_sell_orders'] else '#ff3333'
             
             html += f'<tr style="border-bottom: 1px dashed #333;">'
             html += f'<td style="color: {color}; font-weight: bold; text-align: left; padding: 5px 0;">{price_formatted} ISK</td>'
             html += f'<td style="color: #eee; text-align: center; padding: 5px 0;">{volume_formatted} u.</td>'
-            html += f'<td style="color: #ffeb3b; font-weight: bold; text-align: right; padding: 5px 0;">{order["market"]}</td>'
+            if is_global:
+                html += f'<td style="color: #ffeb3b; font-weight: bold; text-align: right; padding: 5px 0;">{order.get("market", "")}</td>'
             html += f'</tr>'
 
         html += '</table>'
         return html
 
-    # Estructura del Volumen por Mercado
+    # Generar el HTML final para el modal
+
+    # --- Sección de Órdenes Globales ---
+    global_orders_html = f"""
+        <h2 style="color: #1E90FF; text-align: center; margin-top: 5px; border-bottom: 2px solid #1E90FF44; padding-bottom: 5px;">
+            Órdenes TOP 5 Globales (Jita, Dodixie, Amarr, Hek)
+        </h2>
+        <div style="display: flex; justify-content: space-between; gap: 20px; margin-bottom: 30px;">
+            <div style="flex: 1;">
+                <h3 style="color: #00ff00; margin-top: 0; border-bottom: 1px solid #00ff0044; padding-bottom: 5px;">Venta (Más Baratas)</h3>
+                {format_orders(market_data['top_global_sell_orders'], is_global=True)}
+            </div>
+            <div style="flex: 1;">
+                <h3 style="color: #ff3333; margin-top: 0; border-bottom: 1px solid #ff333344; padding-bottom: 5px;">Compra (Más Caras)</h3>
+                {format_orders(market_data['top_global_buy_orders'], is_global=True)}
+            </div>
+        </div>
+    """
+    
+    # --- Sección de Órdenes Específicas ---
+    specific_orders_html = f"""
+        <hr style="border-color:#444; margin: 15px 0;">
+        <h2 style="color: #1E90FF; text-align: center; margin-top: 30px; border-bottom: 2px solid #1E90FF44; padding-bottom: 5px;">
+            Órdenes TOP 5 en **{source_market_name}** (Mercado de Rentabilidad)
+        </h2>
+        <div style="display: flex; justify-content: space-between; gap: 20px;">
+            <div style="flex: 1;">
+                <h3 style="color: #00ff00; margin-top: 0; border-bottom: 1px solid #00ff0044; padding-bottom: 5px;">Venta en {source_market_name}</h3>
+                {format_orders(market_data['top_specific_sell_orders'], is_global=False)}
+            </div>
+            <div style="flex: 1;">
+                <h3 style="color: #ff3333; margin-top: 0; border-bottom: 1px solid #ff333344; padding-bottom: 5px;">Compra en {source_market_name}</h3>
+                {format_orders(market_data['top_specific_buy_orders'], is_global=False)}
+            </div>
+        </div>
+    """
+    
+    # --- Sección de Volumen Multi-Días ---
     volume_html = ""
-    for market, data in market_data['volume_by_market'].items():
-        volume = data['total_volume_10d']
+    for days in VOLUME_TIMEFRAMES:
+        volume = specific_volumes.get(days, 0)
         volume_formatted = "{:,.0f}".format(volume)
-        
         volume_html += f"""
-        <li style="margin-bottom: 8px;">
-            <span style="color: #ffeb3b; font-weight: bold; width: 100px; display: inline-block;">{market}:</span>
-            <span style="font-weight: bold; color: #4CAF50;">{volume_formatted}</span> transacciones
+        <li style="margin-bottom: 8px; display: flex; justify-content: space-between; padding: 0 10px;">
+            <span style="color: #ffeb3b; font-weight: bold;">Últimos {days} Días:</span>
+            <span style="font-weight: bold; color: #4CAF50;">{volume_formatted} transacciones</span>
         </li>
         """
 
-    # Generar el HTML final para el modal
-    summary_html = f"""
-    <p style="font-size: 1.2em; font-weight: bold; color: #1E90FF; text-align: center;">📈 Órdenes Globales: {item_name}</p>
-    <hr style="border-color:#444; margin: 15px 0;">
-
-    <div style="display: flex; justify-content: space-between; gap: 20px;">
-        <div style="flex: 1;">
-            <h3 style="color: #00ff00; margin-top: 0; border-bottom: 1px solid #00ff0044; padding-bottom: 5px;">TOP 5 Venta (Más Baratas)</h3>
-            {format_orders(market_data['top_sell_orders'])}
-        </div>
-        <div style="flex: 1;">
-            <h3 style="color: #ff3333; margin-top: 0; border-bottom: 1px solid #ff333344; padding-bottom: 5px;">TOP 5 Compra (Más Caras)</h3>
-            {format_orders(market_data['top_buy_orders'])}
-        </div>
-    </div>
-    
-    <hr style="border-color:#444; margin: 15px 0;">
-    <p style="font-size: 1.1em; font-weight: bold; color: #ffeb3b; text-align: center;">📦 Volumen de Mercado por Región (Últimos {VOLUME_DAYS} Días)</p>
-    <ul style="list-style: none; padding: 10px 0; text-align: left; font-size: 1.1em; max-width: 300px; margin: 10px auto;">
+    volume_section_html = f"""
+    <hr style="border-color:#444; margin: 25px 0;">
+    <p style="font-size: 1.1em; font-weight: bold; color: #ffeb3b; text-align: center;">
+        📦 Volumen de Transacciones Histórico en **{source_market_name}**
+    </p>
+    <ul style="list-style: none; padding: 10px 0; font-size: 1.1em; max-width: 400px; margin: 10px auto;">
         {volume_html}
     </ul>
     
     <p style="font-size: 0.9em; color: #888; margin-top: 20px; text-align: center;">
-        Fuente: ESI. El volumen es el **total combinado** de compras y ventas por mercado, ya que ESI no los separa.
+        Fuente: ESI. El volumen es el **total combinado** (compras + ventas) de transacciones por día.
     </p>
+    """
+    
+    summary_html = f"""
+    <p style="font-size: 1.2em; font-weight: bold; color: #1E90FF; text-align: center;">📈 Resumen de Mercado para **{item_name}**</p>
+    <hr style="border-color:#444; margin: 15px 0;">
+    
+    {global_orders_html}
+    
+    {specific_orders_html}
+
+    {volume_section_html}
     """
     
     return jsonify({"summary_html": summary_html})
