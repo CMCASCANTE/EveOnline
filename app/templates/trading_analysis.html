@@ -1,93 +1,166 @@
-{% extends "base_layout.html" %}
-
-{% block content %}
-<div class="container">
-    <div style="text-align: center;">
-        <h1 style="color: #4CAF50;">💰 Análisis de Trading Puro (Especulación Local)</h1>
-        <p class="last-update">Última Actualización ESI: {{ data.current_time }}</p>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis Trading Puro</title>
+    <style>
+        /* Estilos CSS (similares a base_layout.html para la coherencia) */
+        body { background-color: #0d1117; color: #ffffff; font-family: sans-serif; line-height: 1.6;}
+        .container { max-width: 90%; margin: 20px auto; padding: 20px; background-color: #161b22; border-radius: 10px; }
+        h1 { color: #FFA07A; border-bottom: 2px solid #FFA07A; padding-bottom: 10px; text-align: center; }
+        h2 { color: #ffeb3b; margin-top: 20px; border-bottom: 1px solid #ffeb3b44; padding-bottom: 5px; text-align: center; }
+        .time-info { color: #8b949e; margin-bottom: 20px; text-align: center; }
         
-        {% if error %}
-            <div style="padding: 20px; background-color: #ff333333; color: #ff3333; border-radius: 8px; font-weight: bold;">
-                {{ error }}
-            </div>
-            <div class="analyze-button-container">
-                <a href="{{ url_for('trading_analysis') }}" style="text-decoration: none;">
-                    <button class="analyze-button" style="background-color: #555;">Recargar</button>
-                </a>
-                <a href="{{ url_for('home') }}" style="text-decoration: none;">
-                    <button class="analyze-button">Volver a Inicio</button>
-                </a>
-            </div>
-        {% else %}
-            
-            <p style="font-size: 1.1em; color: #ffeb3b; border-bottom: 1px solid #ffeb3b33; padding-bottom: 10px;">
-                Algoritmo: **Score de Liquidez** = Margen % (Spread) * Raíz(Volumen 10D). Los resultados se ordenan por este Score.
-            </p>
-            
-            <div class="tab-menu">
-                {% for market_name in data.market_results.keys() %}
-                    <button class="tab-button" onclick="openTab(event, '{{ market_name }}Trading')">
-                        {{ market_name }} (Top 5)
-                    </button>
-                {% endfor %}
-            </div>
+        /* Estilos de tabla */
+        .table-container { 
+            overflow-x: auto; 
+            margin-top: 20px; 
+            background-color: #161b22; 
+            padding: 15px; 
+            border-radius: 6px;
+        }
+        .data-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 0.9em; 
+        }
+        .data-table th, .data-table td { 
+            padding: 8px 12px; 
+            border: 1px solid #30363d;
+            text-align: right; 
+        }
+        .data-table thead th {
+            background-color: #30363d;
+            color: #FFA07A;
+            cursor: pointer;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .data-table tbody tr:nth-child(even) { background-color: #1f242b; }
+        .data-table tbody tr:hover { background-color: #2c333a; }
+        .data-table td { color: #ccc; }
 
-            {% for market_name, results in data.market_results.items() %}
-                <div id="{{ market_name }}Trading" class="tab-content">
-                    <h2>TOP 5 Oportunidades en {{ market_name }}</h2>
-                    {% if results %}
-                        <table class="data-table regional-table">
-                            <thead>
-                                <tr>
-                                    {% for header in data.headers %}
-                                        <th {% if 'Item' in header %}class="item-col"{% endif %}>{{ header }}</th>
-                                    {% endfor %}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for result in results %}
-                                    <tr>
-                                        <td style="color: #00bfff; font-weight: bold;">
-                                            {{ "{:,.0f}".format(result.profitability_score) }}
-                                        </td>
-                                        <td class="isk-col {{ 'positive' if result.spread_percent >= 5 else 'negative' }}">
-                                            {{ "{:,.2f}".format(result.spread_percent) }}%
-                                        </td>
-                                        <td class="positive">
-                                            {{ "{:,.0f}".format(result.spread_isk) }}
-                                        </td>
-                                        <td style="color: #ff3333;">
-                                            {{ "{:,.2f}".format(result.max_buy_price) }}
-                                        </td>
-                                        <td style="color: #00ff00;">
-                                            {{ "{:,.2f}".format(result.min_sell_price) }}
-                                        </td>
-                                        <td>
-                                            {{ "{:,.0f}".format(result.volume_10d) }}
-                                        </td>
-                                        <td class="item-col">
-                                            {{ result.item_name }} ({{ result.quantity }})
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    {% else %}
-                        <p style="text-align: center; color: #888;">
-                            No se encontraron oportunidades de Trading Puro (> 2% Spread, > 0 Volumen) en {{ market_name }} para los items analizados.
-                        </p>
-                    {% endif %}
-                </div>
+        /* Colores de resultados */
+        .positive { color: #4CAF50; font-weight: bold; } /* Verde para positivo/alto */
+        .market-col { width: 10%; }
+        .item-col { text-align: left; width: 30%; }
+
+        /* Estilos de Pestañas */
+        .tab-button-group { text-align: center; margin-bottom: 20px; }
+        .tab-button {
+            background-color: #30363d;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 0 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .tab-button:hover { background-color: #3b424d; }
+        .tab-button.active { background-color: #FFA07A; color: black; font-weight: bold; }
+        .tab-content { display: none; margin-top: 15px; }
+        .tab-content.active { display: block; }
+
+        /* Ordenamiento */
+        .sort-indicator { margin-left: 5px; color: #8b949e; }
+        .sort-indicator.asc:after { content: "▲"; }
+        .sort-indicator.desc:after { content: "▼"; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    {% if error %}
+        <h1 style="color: #ff3333;">❌ Error al Ejecutar el Análisis de Trading:</h1>
+        <p style="color: #ff3333;">{{ error }}</p>
+    {% else %}
+        <h1>✅ ANÁLISIS DE TRADING PURO FINALIZADO</h1>
+        <p class="time-info">Datos actualizados: {{ data.current_time }}</p>
+
+        <div style="margin-bottom: 20px; text-align: center;">
+            <a href="{{ url_for('home') }}">
+                <button class="tab-button" style="background-color: #1E90FF;">
+                    ⬅️ IR A INICIO
+                </button>
+            </a>
+            <a href="{{ url_for('analyze') }}">
+                <button class="tab-button" style="background-color: #4CAF50;">
+                    💰 IR A TIENDA LP
+                </button>
+            </a>
+        </div>
+
+
+        <div class="tab-button-group">
+            <button class="tab-button" onclick="openTab(event, 'global-arbitrage')" id="defaultOpen">💰 Arbitraje Global (Top Spread)</button>
+            <button class="tab-button" onclick="openTab(event, 'global-volume')">📈 Mayor Volumen Global</button>
+            
+            {% for market in data.markets %}
+                <button class="tab-button" onclick="openTab(event, 'market-{{ market | lower }}')">📍 {{ market }}</button>
             {% endfor %}
-            
-            <div class="analyze-button-container">
-                <a href="{{ url_for('trading_analysis') }}" style="text-decoration: none;">
-                    <button class="analyze-button">Recargar Análisis</button>
-                </a>
+        </div>
+        
+        <div id="global-arbitrage" class="tab-content">
+            <h2>💰 Arbitraje Global (Mejor Spread por Item - Top {{ data.global_arbitrage|length }})</h2>
+            {% set current_results = data.global_arbitrage %}
+            {% set table_id = 'table-global-arbitrage' %}
+            {% include '_trading_table_template.html' with context %}
+        </div>
+
+        <div id="global-volume" class="tab-content">
+            <h2>📈 Mayor Volumen Global (Top Volumen por Item - Top {{ data.global_volume|length }})</h2>
+            {% set current_results = data.global_volume %}
+            {% set table_id = 'table-global-volume' %}
+            {% include '_trading_table_template.html' with context %}
+        </div>
+        
+        {% for market_name, results in data.market_results.items() %}
+            <div id="market-{{ market_name | lower }}" class="tab-content">
+                <h2>📍 Trading en {{ market_name }} (Top {{ results|length }})</h2>
+                {% set current_results = results %}
+                {% set table_id = 'table-market-' + market_name | lower %}
+                {% include '_trading_table_template.html' with context %}
             </div>
-            
-        {% endif %}
-    </div>
+        {% endfor %}
+
+    {% endif %}
+
 </div>
 
-{% endblock %}
+<script>
+    /**
+     * Alterna entre las pestañas de resultados de trading.
+     */
+    function openTab(evt, tabId) {
+        var i, tabcontent, tablinks;
+        
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+            tabcontent[i].classList.remove("active");
+        }
+
+        tablinks = document.getElementsByClassName("tab-button");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].classList.remove("active");
+        }
+
+        document.getElementById(tabId).style.display = "block";
+        document.getElementById(tabId).classList.add("active");
+        evt.currentTarget.classList.add("active");
+    }
+
+    // Abrir la primera pestaña al cargar la página
+    document.addEventListener("DOMContentLoaded", function() {
+        const defaultOpenButton = document.getElementById('defaultOpen');
+        if (defaultOpenButton) {
+            defaultOpenButton.click();
+        }
+    });
+</script>
+
+</body>
+</html>

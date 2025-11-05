@@ -4,6 +4,46 @@
 
 {% block content %}
 
+<style>
+    /* Estilos de Botones de Navegación */
+    .btn-group { margin-bottom: 20px; }
+    .btn-group button {
+        background-color: #1E90FF; 
+        color: white; 
+        border: none; 
+        padding: 10px 15px; 
+        margin: 5px 5px 5px 0; 
+        cursor: pointer; 
+        border-radius: 4px;
+        transition: background-color 0.3s;
+    }
+    .btn-group button:hover { background-color: #106fbe; }
+    .btn-group button.active { background-color: #ffeb3b; color: #0d1117; font-weight: bold; }
+    .hidden-table { display: none !important; }
+    
+    /* Estilos de tabla (Ajustados para el sorting) */
+    .data-table th { cursor: pointer; }
+    .sort-indicator { margin-left: 5px; color: #8b949e; }
+    .sort-indicator.asc:after { content: "▲"; }
+    .sort-indicator.desc:after { content: "▼"; }
+    
+    /* Estilos del botón Detalles/ESI (Modal) */
+    .link-esi {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        padding: 4px 8px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 12px;
+        margin: 2px 1px;
+        cursor: pointer;
+        border-radius: 4px;
+    }
+    .link-esi:hover { background-color: #45a049; }
+</style>
+
 <div class="container">
     {% if error %}
         <h1 class="negative">❌ Error al Ejecutar el Análisis:</h1>
@@ -18,25 +58,48 @@
                     ⬅️ INICIAR NUEVA BÚSQUEDA
                 </button>
             </a>
+            <a href="{{ url_for('trading_analysis') }}">
+                <button class="reload-button" style="background-color: #FFA07A;">
+                    💰 IR A TRADING PURO
+                </button>
+            </a>
         </div>
         
-        {% set current_results = data.global_max_isk %}
-        {% set headers = data.headers %}
-        <h2>TABLA 5: TOP {{ data.global_max_isk|length }} RENTABILIDAD MÁXIMA GLOBAL</h2>
-        {% include 'table_template.html' with context %}
-        
-        {% set current_results = data.global_liquidez_media %}
-        <h2>TABLA 6: TOP {{ data.global_liquidez_media|length }} LIQUIDEZ MEDIA (ISK/LP AVG ≥ 1,000)</h2>
-        {% include 'table_template.html' with context %}
+        <div class="btn-group">
+            <button class="active" onclick="showTable('global_isk')">Rentabilidad Máxima</button>
+            <button onclick="showTable('global_liquidez_media')">Liquidez Media (ISK/LP ≥ 1,000)</button>
+            <button onclick="showTable('global_liquidez_alta')">Liquidez Alta (ISK/LP ≥ 2,000)</button>
+        </div>
 
-        {% set current_results = data.global_liquidez_alta %}
-        <h2>TABLA 7: TOP {{ data.global_liquidez_alta|length }} LIQUIDEZ ALTA (ISK/LP AVG ≥ 2,000)</h2>
-        {% include 'table_template.html' with context %}
+        <div id="global_isk_table" class="table-group">
+            {% set current_results = data.global_max_isk %}
+            {% set headers = data.headers %}
+            {% set table_id = 'table-global-max-isk' %}
+            <h2>TABLA 5: TOP {{ data.global_max_isk|length }} RENTABILIDAD MÁXIMA GLOBAL</h2>
+            {% include 'table_template.html' with context %}
+        </div>
+        
+        <div id="global_liquidez_media_table" class="table-group hidden-table">
+            {% set current_results = data.global_liquidez_media %}
+            {% set headers = data.headers %}
+            {% set table_id = 'table-global-liquidez-media' %}
+            <h2>TABLA 6: TOP {{ data.global_liquidez_media|length }} LIQUIDEZ MEDIA (ISK/LP AVG ≥ 1,000)</h2>
+            {% include 'table_template.html' with context %}
+        </div>
+
+        <div id="global_liquidez_alta_table" class="table-group hidden-table">
+            {% set current_results = data.global_liquidez_alta %}
+            {% set headers = data.headers %}
+            {% set table_id = 'table-global-liquidez-alta' %}
+            <h2>TABLA 7: TOP {{ data.global_liquidez_alta|length }} LIQUIDEZ ALTA (ISK/LP AVG ≥ 2,000)</h2>
+            {% include 'table_template.html' with context %}
+        </div>
 
         <h1>📊 Análisis por Mercado Regional</h1>
 
         {% for market_name, results in data.market_results.items() %}
             {% set current_results = results %}
+            {% set table_id = 'table-regional-' + market_name | lower %}
             <h2>{{ market_name }} (Top {{ results|length }})</h2>
             {% include 'table_template.html' with context %}
         {% endfor %}
@@ -44,13 +107,89 @@
     {% endif %}
 
     <div style="margin-top: 50px;">
-        <a href="{{ url_for('home') }}">
-            <button class="reload-button">
-                ⬅️ INICIAR NUEVA BÚSQUEDA
-            </button>
-        </a>
+        <a href="{{ url_for('home') }}" class="reload-button">⬅️ INICIAR NUEVA BÚSQUEDA</a>
     </div>
 
 </div>
+
+<script>
+    /**
+     * Alterna la visualización de las tablas globales
+     */
+    function showTable(tableId) {
+        // Ocultar todas las tablas
+        const tableGroups = document.querySelectorAll('.table-group');
+        tableGroups.forEach(group => group.classList.add('hidden-table'));
+
+        // Mostrar la tabla seleccionada
+        const selectedTable = document.getElementById(tableId + '_table');
+        if (selectedTable) {
+            selectedTable.classList.remove('hidden-table');
+        }
+
+        // Actualizar el estado del botón
+        const buttons = document.querySelectorAll('.btn-group button');
+        buttons.forEach(button => button.classList.remove('active'));
+        
+        if (tableId === 'global_isk') {
+            buttons[0].classList.add('active');
+        } else if (tableId === 'global_liquidez_media') {
+            buttons[1].classList.add('active');
+        } else if (tableId === 'global_liquidez_alta') {
+            buttons[2].classList.add('active');
+        }
+    }
+
+    /**
+     * [MODIFICADO] Función para abrir el modal y cargar el resumen de mercado.
+     * @param {HTMLElement} buttonElement - El botón "Detalles" que se hizo clic.
+     */
+    function openModal(buttonElement) {
+        const typeId = buttonElement.getAttribute('data-type-id');
+        const itemName = buttonElement.getAttribute('data-item-name');
+        // El mercado de origen se añade en table_template.html (para tablas globales) o 
+        // se deduce del contexto del bucle (para tablas regionales)
+        const marketName = buttonElement.getAttribute('data-market-name') || 
+                           // Intentar deducir el mercado de la tabla regional
+                           buttonElement.closest('.container').querySelector('h2').innerText.split('(')[0].trim(); 
+        
+        const modal = document.getElementById('marketModal');
+        const modalBody = document.getElementById('modal-body-content');
+        modalBody.innerHTML = 'Cargando análisis de mercado...';
+        modal.style.display = 'block';
+
+        fetch('{{ url_for("market_summary_api") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                type_id: typeId, 
+                item_name: itemName, 
+                source_market_name: marketName 
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            modalBody.innerHTML = data.summary_html;
+        })
+        .catch(error => {
+            console.error('Error fetching market summary:', error);
+            modalBody.innerHTML = '<p style="color: #ff3333;">Error al cargar el resumen del mercado. Inténtalo de nuevo más tarde.</p>';
+        });
+    }
+
+    function closeModal() {
+        document.getElementById('marketModal').style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+        if (event.target == document.getElementById('marketModal')) {
+            closeModal();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        showTable('global_isk'); 
+    });
+</script>
 
 {% endblock %}

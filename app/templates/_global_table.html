@@ -1,0 +1,64 @@
+<div class="table-container">
+    {# Usamos data.headers que tiene 12 columnas #}
+    {% set global_headers = data.headers %}
+    
+    <table class="data-table global-table" id="{{ table_id | default('table-global-max-isk') }}">
+        <thead>
+            <tr>
+                {# Columnas numéricas en la tabla global: 0, 1, 2, 3, 4, 6, 7, 8, 9 #}
+                {% set numeric_cols_lp_global = [0, 1, 2, 3, 4, 6, 7, 8, 9] %}
+                
+                {% for header in global_headers %}
+                    {% set i = loop.index0 %}
+                    
+                    <th onclick="sortTable('{{ table_id | default('table-global-max-isk') }}', {{ i }}, {{ 'true' if i in numeric_cols_lp_global else 'false' }})"
+                        {% if 'Item' in header %}class="item-col"{% endif %}
+                        {% if 'ISK' in header or 'Volumen' in header or 'ANÁLISIS' in header %}class="isk-col"{% endif %}>
+                        {{ header }}
+                        <span class="sort-indicator" data-col="{{ i }}"></span>
+                    </th>
+                    
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for result in current_results %}
+                <tr>
+                    <td class="isk-col {{ 'positive' if result.isk_per_lp >= 1 else 'negative' }}">
+                        {{ "{:,.0f}".format(result.isk_per_lp) }}
+                    </td>
+                    <td class="isk-col {{ 'positive' if result.isk_per_lp_current >= 1 else 'negative' }}">
+                        {{ "{:,.0f}".format(result.isk_per_lp_current) }}
+                    </td>
+                    <td class="{{ 'positive' if result.isk_profit >= 0 else 'negative' }}">
+                        {{ "{:,.0f}".format(result.isk_profit) }}
+                    </td>
+                    <td>{{ "{:,.0f}".format(result.lp_cost) }}</td>
+                    <td>{{ "{:,.0f}".format(result.isk_base_cost) }}</td>
+                    
+                    <td class="market-col">{{ result.market }}</td>
+                    
+                    <td>{{ "{:,.2f}".format(result.sell_price_avg) }}</td>
+                    <td>{{ "{:,.2f}".format(result.sell_price_low) }}</td>
+                    <td>{{ "{:,.2f}".format(result.sell_price_current) }}</td>
+                    
+                    <td>{{ "{:,.0f}".format(result.volume_10d) }}</td>
+
+                    <td>
+                        <button
+                            data-type-id="{{ result.type_id }}"
+                            data-item-name="{{ result.item_name | e }}"
+                            data-market-name="{{ result.market }}"
+                            onclick="openModal(this)"
+                            class="link-esi"
+                        >
+                            Detalles
+                        </button>
+                    </td>
+                    
+                    <td class="item-col" style="text-align: left;">{{ result.item_name }} ({{ result.quantity }})</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

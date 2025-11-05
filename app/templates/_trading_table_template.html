@@ -1,0 +1,43 @@
+<table class="data-table" id="{{ table_id }}">
+    <thead>
+        <tr>
+            {% set headers_trading = data.headers %}
+            {% for header in headers_trading %}
+                {% set i = loop.index0 %}
+                
+                {# Las columnas 0 y 1 (Item, Mercado) son alfabéticas (false), el resto numéricas (true) #}
+                {% set sort_dir = 'false' if i == 0 or i == 1 else 'true' %}
+
+                <th {% if header == 'Item' %}class="item-col"{% elif header == 'Mercado' %}class="market-col"{% endif %}
+                    onclick="sortTable('{{ table_id }}', {{ i }}, {{ sort_dir }})"
+                >
+                    {{ header }}
+                    <span class="sort-indicator" data-col="{{ i }}"></span>
+                </th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for result in current_results %}
+            <tr>
+                <td class="item-col">{{ result.item_name }}</td>
+                <td class="market-col">{{ result.market }}</td>
+                <td>{{ "{:,.2f}".format(result.buy_price) }}</td>
+                <td>{{ "{:,.2f}".format(result.sell_price) }}</td>
+                <td class="{{ 'positive' if result.profit_per_unit > 0 else 'negative' }}">
+                    {{ "{:,.2f}".format(result.profit_per_unit) }}
+                </td>
+                <td class="{{ 'positive' if result.roi_percent > 0 else 'negative' }}">
+                    {{ "{:,.2f}".format(result.roi_percent) }}%
+                </td>
+                <td>{{ "{:,.0f}".format(result.volume_10d) }}</td>
+                <td class="{{ 'positive' if result.spread_percent > 0 else 'negative' }}">
+                    {{ "{:,.2f}".format(result.spread_percent) }}%
+                </td>
+            </tr>
+        {% endfor %}
+        {% if not current_results %}
+            <tr><td colspan="{{ headers_trading|length }}" style="text-align: center; color: #ffeb3b;">⚠️ No hay resultados que cumplan los criterios de filtro/liquidez en este momento.</td></tr>
+        {% endif %}
+    </tbody>
+</table>

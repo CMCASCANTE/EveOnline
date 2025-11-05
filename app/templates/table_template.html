@@ -1,13 +1,29 @@
-<table class="data-table {% if market_name %}regional-table{% else %}global-table{% endif %}">
+<table class="data-table {% if market_name %}regional-table{% else %}global-table{% endif %}" id="{{ table_id }}">
     <thead>
         <tr>
+            {# Columna ISK/LP AVG (0) es la primera columna para todas las tablas #}
+            {% set numeric_cols_lp = [0, 1, 2, 3, 4, 6, 7, 8, 9] %} 
             {% for header in headers %}
                 {% if header == 'Mercado' and not market_name %}
-                    <th class="market-col">{{ header }}</th>
-                {% elif header != 'Mercado' %}
-                    <th {% if 'Item' in header %}class="item-col"{% endif %}
-                        {% if 'ISK' in header or 'Volumen' in header or 'ANÁLISIS' in header %}class="isk-col"{% endif %}>
+                    {% set i = loop.index0 %}
+                    <th class="market-col" 
+                        onclick="sortTable('{{ table_id }}', {{ i }}, false)"
+                    >
                         {{ header }}
+                        <span class="sort-indicator" data-col="{{ i }}"></span>
+                    </th>
+                {% elif header != 'Mercado' %}
+                    {# El índice i es el índice real de la columna en la tabla. #}
+                    {% set i = loop.index0 - (1 if market_name and loop.index0 > 4 else 0) %}
+                    
+                    {% set is_numeric = i in numeric_cols_lp %}
+                    
+                    <th {% if 'Item' in header %}class="item-col"{% endif %}
+                        {% if 'ISK' in header or 'Volumen' in header or 'ANÁLISIS' in header %}class="isk-col"{% endif %}
+                        onclick="sortTable('{{ table_id }}', {{ i }}, {{ 'true' if is_numeric else 'false' }})"
+                    >
+                        {{ header }}
+                        <span class="sort-indicator" data-col="{{ i }}"></span>
                     </th>
                 {% endif %}
             {% endfor %}
@@ -42,11 +58,11 @@
                     <button
                         data-type-id="{{ result.type_id }}"
                         data-item-name="{{ result.item_name | e }}"
-                        data-source-market-name="{{ result.market }}" {# <--- NUEVO ATRIBUTO: Pasa el mercado donde se encontró la mejor rentabilidad #}
-                        onclick="handleOrderAnalysis(this)"
-                        class="esi-button"
+                        data-market-name="{{ result.market }}" 
+                        onclick="openModal(this)"
+                        class="link-esi"
                     >
-                        Ver Órdenes (ESI)
+                        Detalles
                     </button>
                 </td>
 

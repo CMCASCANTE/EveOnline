@@ -38,312 +38,270 @@
 
         /* Estilos de la Tabla */
         .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 30px;
-            font-size: 0.85em;
-            table-layout: auto;
-            background-color: #383838;
-            border-radius: 8px;
-            overflow: hidden; 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+            font-size: 0.9em;
+            table-layout: fixed; /* Ayuda a controlar el ancho de las columnas */
         }
-        .data-table th, .data-table td {
-            padding: 10px 8px;
+        .data-table th, .data-table td { 
+            padding: 8px 12px; 
+            border: 1px solid #444; 
             text-align: right;
-            border-bottom: 1px solid #444;
         }
-        .data-table th {
-            background-color: #4CAF50;
-            color: #1a1a1a;
-            font-weight: bold;
-            text-transform: uppercase;
+        .data-table thead th {
+            background-color: #3a3a3a;
+            color: #ffeb3b;
+            cursor: pointer;
             position: sticky;
             top: 0;
+            z-index: 10;
         }
-        .data-table tbody tr:hover {
-            background-color: #4a4a4a;
-        }
+        .data-table tbody tr:nth-child(even) { background-color: #333; }
+        .data-table tbody tr:hover { background-color: #444; }
 
-        /* Alineación y Colores */
-        .item-col { text-align: left; max-width: 250px; }
-        .market-col { text-align: center; font-weight: bold; }
-        .isk-col { font-weight: 600; }
-        .positive { color: #00ff00; } /* Verde para rentabilidad positiva */
-        .negative { color: #ff3333; } /* Rojo para pérdidas */
+        /* Colores de resultados */
+        .positive { color: #4CAF50; font-weight: bold; } /* Verde para positivo/alto */
+        .negative { color: #ff3333; } /* Rojo para negativo */
+        
+        /* Ancho de columnas específicas */
+        .item-col { text-align: left; width: 25%; }
+        .market-col { width: 8%; }
+        .isk-col { width: 8%; } 
 
-        /* Estilos Específicos para el Botón de ESI */
-        .esi-button { 
-            background-color: #1E90FF; /* Azul brillante para ESI */
+        /* Botones y Navegación */
+        .reload-button {
+            background-color: #1E90FF;
             color: white;
             border: none;
-            padding: 6px 10px;
-            border-radius: 6px;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
             cursor: pointer;
-            transition: background-color 0.2s;
-            font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-            white-space: nowrap;
+            border-radius: 8px;
+            transition: background-color 0.3s;
         }
-        .esi-button:hover {
-            background-color: #0077cc;
+        .reload-button:hover {
+            background-color: #106fbe;
         }
 
-        /* Estilo para Tablas Regionales */
-        .regional-table .market-col {
-            display: none; 
-        }
-
-        /* Modal para la ESI */
+        /* --- Modal Styles --- */
         .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
+            display: none; 
+            position: fixed; 
+            z-index: 100;
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
             overflow: auto;
             background-color: rgba(0,0,0,0.8);
-            backdrop-filter: blur(5px);
         }
         .modal-content {
-            background-color: #383838;
-            margin: 10% auto;
-            padding: 25px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 800px; /* MODIFICADO para dar cabida a más tablas */
+            background-color: #1a1a1a;
+            margin: 10% auto; 
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 800px;
+            border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.7);
-            position: relative;
-            animation: slideIn 0.3s ease-out;
         }
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(-50px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .close-button {
+        .modal-content h2 { color: #4CAF50; border-bottom: 1px solid #4CAF5033; padding-bottom: 5px; }
+        .close {
             color: #aaa;
             float: right;
             font-size: 28px;
             font-weight: bold;
-            transition: color 0.2s;
         }
-        .close-button:hover,
-        .close-button:focus {
-            color: #fff;
+        .close:hover,
+        .close:focus {
+            color: white;
             text-decoration: none;
             cursor: pointer;
         }
-        .esi-loading-spinner { 
-            text-align: center;
-            padding: 30px;
-            font-size: 1.2em;
-            color: #4CAF50;
-        }
-        .esi-loading-spinner span {
-            display: block;
-            margin-top: 10px;
-        }
-        
-        /* Botón principal */
-        .analyze-button-container {
-            text-align: center;
-            margin: 40px 0;
-        }
-        .analyze-button {
-            background-color: #4CAF50;
-            color: black;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.2em;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.1s;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
-        .analyze-button:hover {
-            background-color: #6bcc6e;
-            transform: translateY(-2px);
-        }
-        
-        /* Estilos del layout de Análisis */
-        .tab-menu {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
+
+        /* Estilos de las pestañas (para trading puro) */
         .tab-button {
-            background-color: #444;
-            color: #eee;
-            padding: 10px 15px;
+            background-color: #333;
+            color: white;
             border: none;
-            border-radius: 6px;
+            padding: 10px 15px;
+            margin-right: 5px;
             cursor: pointer;
-            transition: background-color 0.2s, color 0.2s;
-            font-weight: bold;
+            border-radius: 5px 5px 0 0;
+            transition: background-color 0.3s;
         }
         .tab-button.active {
-            background-color: #4CAF50;
-            color: black;
-            box-shadow: 0 0 10px #4CAF5055;
-        }
-        .tab-button:hover:not(.active) {
-            background-color: #555;
+            background-color: #2c2c2c;
+            color: #ffeb3b;
+            font-weight: bold;
         }
         .tab-content {
+            border: 1px solid #444;
+            padding: 15px;
+            border-radius: 0 5px 5px 5px;
+            background-color: #2c2c2c;
+        }
+        .tab-content:not(.active) {
             display: none;
-            animation: fadeIn 0.4s;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .container {
-                margin: 10px auto;
-                padding: 15px;
-                border-radius: 0;
-                max-width: 100%;
-            }
-            .data-table {
-                font-size: 0.7em;
-            }
-            .data-table th, .data-table td {
-                padding: 8px 4px;
-            }
-            .esi-button {
-                padding: 4px 6px;
-                font-size: 0.9em;
-            }
         }
 
     </style>
+    {% block head %}{% endblock %}
 </head>
 <body>
-
+    
     {% block content %}{% endblock %}
 
-    <div id="aiModal" class="modal">
+    <div id="marketModal" class="modal">
         <div class="modal-content">
-            <span class="close-button" onclick="closeModal()">&times;</span>
-            <h2 id="modalTitle">Análisis de Mercado ESI</h2>
-            <div id="modalBody">
-                <div class="esi-loading-spinner">
-                    <img src="https://placehold.co/50x50/1E90FF/000?text=ESI" alt="Spinner de Carga ESI" style="border-radius: 50%; margin-bottom: 10px;">
-                    <span>Analizando Órdenes en Jita...</span>
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div id="modal-body-content">
                 </div>
-            </div>
         </div>
     </div>
 
+
     <script>
-        // Referencia al modal y al cuerpo
-        const modal = document.getElementById('aiModal');
-        const modalBody = document.getElementById('modalBody');
-        const modalTitle = document.getElementById('modalTitle');
-        
-        // --- Lógica del Botón (Paso 1: Leer atributos de datos) ---
+        // Objeto para mantener el estado de ordenación por tabla
+        var currentSortColumn = {}; 
 
         /**
-         * Maneja el clic en el botón de Análisis ESI, leyendo los atributos de datos 
-         * para obtener el type_id, item_name y market_name.
-         * @param {HTMLElement} buttonElement El botón que fue presionado.
+         * Función genérica para ordenar una tabla HTML.
+         * @param {string} tableId - ID de la tabla.
+         * @param {number} n - Índice de la columna a ordenar.
+         * @param {boolean} isNumeric - Si la columna contiene números (maneja la conversión de formato ES).
          */
-        function handleOrderAnalysis(buttonElement) {
-            const typeId = buttonElement.dataset.typeId;
-            const itemName = buttonElement.dataset.itemName; 
-            const sourceMarketName = buttonElement.dataset.sourceMarketName; // <--- NUEVA LECTURA
+        function sortTable(tableId, n, isNumeric) {
+            var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+            table = document.getElementById(tableId);
+            if (!table) return;
+
+            // Inicializar o recuperar la dirección de ordenación
+            if (!currentSortColumn[tableId]) {
+                currentSortColumn[tableId] = {};
+            }
             
-            // Abre el modal y comienza el proceso de solicitud al servidor
-            generateOrderSummary(typeId, itemName, sourceMarketName); // <--- NUEVO PARÁMETRO
-        }
+            var currentDir = currentSortColumn[tableId][n] || 'asc';
+            dir = currentDir === 'asc' ? 'desc' : 'asc';
+            
+            // Si es la primera vez que se ordena esta columna, siempre empezar en descendente (por lo general, valores más altos)
+            if (currentDir === 'asc') {
+                dir = 'desc'; 
+            } else if (currentDir === 'desc') {
+                dir = 'asc';
+            } else { // Si es undefined (primer click)
+                dir = 'desc';
+            }
 
-        // --- Lógica Principal de la API (Paso 2: Llamada al servidor de Flask) ---
 
-        /**
-         * Muestra el modal, muestra la carga y hace la llamada AJAX al servidor de Flask.
-         * @param {string} typeId El ID del tipo de item.
-         * @param {string} itemName El nombre del item.
-         * @param {string} sourceMarketName El nombre del mercado donde se encontró el mejor resultado. <--- NUEVO PARÁMETRO
-         */
-        async function generateOrderSummary(typeId, itemName, sourceMarketName) {
-            modalTitle.textContent = `Análisis de Órdenes: ${itemName}`;
-            // Mensaje de carga actualizado para reflejar la consulta global
-            modalBody.innerHTML = `
-                <div class="esi-loading-spinner">
-                    <img src="https://placehold.co/50x50/1E90FF/000?text=ESI" alt="Spinner de Carga" style="border-radius: 50%; margin-bottom: 10px;">
-                    <span>Consultando Órdenes Globales y el mercado **${sourceMarketName}**...</span>
-                </div>
-            `;
-            modal.style.display = 'block';
+            // Limpiar indicadores de ordenación de otras columnas
+            var indicators = table.getElementsByClassName('sort-indicator');
+            for (var k = 0; k < indicators.length; k++) {
+                indicators[k].classList.remove('asc', 'desc');
+            }
 
-            try {
-                // LLAMADA ACTUALIZADA ENVIANDO EL MERCADO FUENTE
-                const response = await fetch('/api/market-summary', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        type_id: typeId, 
-                        item_name: itemName,
-                        source_market_name: sourceMarketName // <--- NUEVO DATO ENVIADO
-                    })
-                });
+            switching = true;
+            
+            while (switching) {
+                switching = false;
+                rows = table.rows;
+                /* Recorre todas las filas, excepto la primera (encabezado) */
+                for (i = 1; i < (rows.length - 1); i++) {
+                    shouldSwitch = false;
+                    
+                    /* Obtener elementos de las filas adyacentes */
+                    // Nota: el índice de la columna `n` debe coincidir con el índice del <td>
+                    x = rows[i].getElementsByTagName("TD")[n];
+                    y = rows[i + 1].getElementsByTagName("TD")[n];
+                    
+                    var xContent, yContent;
 
-                if (!response.ok) {
-                    // Manejar errores HTTP (400, 500, etc.)
-                    const errorText = await response.text(); 
-                    let errorMessage = `HTTP error! status: ${response.status}.`;
-                    try {
-                         // Intentar parsear el JSON de error del servidor
-                         const errorData = JSON.parse(errorText);
-                         errorMessage = errorData.summary_html || errorMessage; // Usar el HTML de error si viene
-                    } catch (e) {
-                         errorMessage += ` Respuesta: ${errorText.substring(0, 100)}...`;
+                    /* Compara las dos filas */
+                    if (isNumeric) {
+                        // --- CORRECCIÓN CLAVE PARA EL PARSEO DE NÚMEROS ESPAÑOLES ---
+                        // 1. Eliminar todo lo que no sea número, coma, punto o guion.
+                        // 2. Eliminar puntos (separador de miles en ES).
+                        // 3. Reemplazar la coma (separador decimal en ES) por punto (separador decimal en JS).
+                        var cleanX = x.innerHTML.replace(/[^\d.,-]+/g, '').replace(/\./g, '').replace(',', '.');
+                        var cleanY = y.innerHTML.replace(/[^\d.,-]+/g, '').replace(/\./g, '').replace(',', '.');
+                        
+                        xContent = parseFloat(cleanX);
+                        yContent = parseFloat(cleanY);
+
+                        if (isNaN(xContent)) xContent = -Infinity;
+                        if (isNaN(yContent)) yContent = -Infinity;
+
+                    } else {
+                        // Ordenación alfabética
+                        xContent = x.innerHTML.toLowerCase();
+                        yContent = y.innerHTML.toLowerCase();
                     }
-                    throw new Error(errorMessage);
+
+                    if (dir == "asc") {
+                        // Si X es mayor que Y, se debe cambiar.
+                        if (xContent > yContent) {
+                            shouldSwitch = true;
+                            break;
+                        }
+                    } else if (dir == "desc") {
+                        // Si X es menor que Y, se debe cambiar.
+                        if (xContent < yContent) {
+                            shouldSwitch = true;
+                            break;
+                        }
+                    }
                 }
+                
+                if (shouldSwitch) {
+                    /* Si se debe cambiar, realiza el cambio e indica que se repita el bucle */
+                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                    switching = true;
+                    switchcount++;
+                } else {
+                    /* Si no se realizaron cambios, salir del bucle. */
+                    // Además, si el conteo de cambios es 0 Y es el primer intento (dir original 'desc'), 
+                    // se invierte la dirección para asegurar el orden.
+                    if (switchcount == 0 && dir === 'desc' && currentDir !== 'asc') {
+                         // Esto cubre el caso en que todos son iguales y se intentó un primer ordenamiento 'desc'
+                         // Si ya se ha ordenado una vez, no re-invertir.
+                         if (currentDir === 'desc' || currentDir === 'asc') {
+                            // Si todos son iguales, la tabla ya está en "orden"
+                            currentSortColumn[tableId][n] = dir;
+                            break; 
+                         }
+                    }
 
-                const data = await response.json();
-                
-                // Muestra el resumen de las órdenes (el HTML viene pre-formateado desde el servidor)
-                modalBody.innerHTML = data.summary_html;
-
-            } catch (error) {
-                console.error("Error al obtener resumen de mercado ESI:", error);
-                
-                // Si el mensaje de error es el HTML preformateado (como en el 500 del servidor), lo mostramos
-                const isHtmlError = error.message.includes("❌");
-                
-                modalBody.innerHTML = isHtmlError ? error.message : `
-                    <p style="color: #ff3333; font-weight: bold;">❌ Error de conexión con ESI/Servidor.</p>
-                    <p>${error.message}</p>
-                `;
+                    // Actualizar el estado final de la columna y el indicador
+                    currentSortColumn[tableId][n] = dir; 
+                    var currentIndicator = table.getElementsByClassName('sort-indicator')[n];
+                    if (currentIndicator) {
+                        currentIndicator.classList.add(dir);
+                    }
+                }
             }
         }
 
-        // --- Lógica de la interfaz ---
+        // Funciones del Modal (Mantenidas)
+        // ... (closeModal, openModal, handleOrderAnalysis)
         
         function closeModal() {
-            modal.style.display = 'none';
+            document.getElementById('marketModal').style.display = 'none';
         }
 
-        // Cerrar el modal al hacer clic fuera
+        // Listener para cerrar el modal al hacer clic fuera
         window.onclick = function(event) {
-            if (event.target == modal) {
+            if (event.target == document.getElementById('marketModal')) {
                 closeModal();
             }
         }
 
         /**
-         * Alterna entre las pestañas de resultados (Globales vs. Regionales).
+         * Alterna entre las pestañas de resultados (Globales vs. Regionales) - Usado en Trading
          */
         function openTab(evt, tabId) {
             var i, tabcontent, tablinks;

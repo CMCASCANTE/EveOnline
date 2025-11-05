@@ -55,12 +55,12 @@
 
     <h1>EVE MARKET ANALYZER</h1>
     <div class="button-group">
-        <a href="{{ url_for('loading') }}">
+        <a href="{{ url_for('loading', dest='analyze') }}">
             <button class="start-button">
                 📈 INICIAR RENTABILIDAD LP
             </button>
         </a>
-        <a href="{{ url_for('loading_trading') }}">
+        <a href="{{ url_for('loading', dest='trading') }}">
             <button class="start-button trading">
                 💰 INICIAR TRADING PURO
             </button>
