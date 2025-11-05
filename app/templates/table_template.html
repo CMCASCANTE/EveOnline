@@ -1,8 +1,9 @@
 <table class="data-table {% if market_name %}regional-table{% else %}global-table{% endif %}" id="{{ table_id }}">
     <thead>
         <tr>
-            {# Columna ISK/LP AVG (0) es la primera columna para todas las tablas #}
-            {% set numeric_cols_lp = [0, 1, 2, 3, 4, 6, 7, 8, 9] %} 
+            {% set numeric_cols_regional = [0, 1, 2, 3, 4, 5, 6, 7, 8] %}
+            {% set numeric_cols_global = [0, 1, 2, 3, 4, 6, 7, 8, 9] %}
+            
             {% for header in headers %}
                 {% if header == 'Mercado' and not market_name %}
                     {% set i = loop.index0 %}
@@ -13,13 +14,13 @@
                         <span class="sort-indicator" data-col="{{ i }}"></span>
                     </th>
                 {% elif header != 'Mercado' %}
-                    {# El índice i es el índice real de la columna en la tabla. #}
-                    {% set i = loop.index0 - (1 if market_name and loop.index0 > 4 else 0) %}
+                    {% set i = loop.index0 - (0 if not market_name else 1) %} 
                     
-                    {% set is_numeric = i in numeric_cols_lp %}
+                    {% set is_numeric = (i in numeric_cols_regional and market_name) or (i in numeric_cols_global and not market_name) %}
                     
-                    <th {% if 'Item' in header %}class="item-col"{% endif %}
-                        {% if 'ISK' in header or 'Volumen' in header or 'ANÁLISIS' in header %}class="isk-col"{% endif %}
+                    <th {% if 'Item' in header %}class="item-col"
+                        {% elif 'ISK' in header or 'Volumen' in header or 'ANÁLISIS' in header %}class="isk-col"
+                        {% endif %}
                         onclick="sortTable('{{ table_id }}', {{ i }}, {{ 'true' if is_numeric else 'false' }})"
                     >
                         {{ header }}
@@ -32,28 +33,45 @@
     <tbody>
         {% for result in current_results %}
             <tr>
+                {# Columna 0: ISK/LP MÁX (Global/Regional) #}
                 <td class="isk-col {{ 'positive' if result.isk_per_lp >= 1 else 'negative' }}">
                     {{ "{:,.0f}".format(result.isk_per_lp) }}
                 </td>
+                
+                {# Columna 1: ISK/LP ACTUAL (Global/Regional) #}
                 <td class="isk-col {{ 'positive' if result.isk_per_lp_current >= 1 else 'negative' }}">
                     {{ "{:,.0f}".format(result.isk_per_lp_current) }}
                 </td>
-                <td class="{{ 'positive' if result.isk_profit >= 0 else 'negative' }}">
+                
+                {# Columna 2: ISK Beneficio MÁX (Global/Regional) #}
+                <td class="isk-col {{ 'positive' if result.isk_profit >= 0 else 'negative' }}">
                     {{ "{:,.0f}".format(result.isk_profit) }}
                 </td>
-                <td>{{ "{:,.0f}".format(result.lp_cost) }}</td>
-                <td>{{ "{:,.0f}".format(result.isk_base_cost) }}</td>
+                
+                {# Columna 3: LP Coste (Global/Regional) #}
+                <td class="isk-col">{{ "{:,.0f}".format(result.lp_cost) }}</td>
+                
+                {# Columna 4: ISK Base Coste (Global/Regional) #}
+                <td class="isk-col">{{ "{:,.0f}".format(result.isk_base_cost) }}</td>
 
+                {# Columna 5/No existe: Mercado (Solo Global) #}
                 {% if not market_name %}
                     <td class="market-col">{{ result.market }}</td>
                 {% endif %}
 
-                <td>{{ "{:,.2f}".format(result.sell_price_avg) }}</td>
-                <td>{{ "{:,.2f}".format(result.sell_price_low) }}</td>
-                <td>{{ "{:,.2f}".format(result.sell_price_current) }}</td>
+                {# Columna 5/6: Venta Media (Global/Regional) #}
+                <td class="isk-col">{{ "{:,.2f}".format(result.sell_price_avg) }}</td>
+                
+                {# Columna 6/7: Venta Baja (Global/Regional) #}
+                <td class="isk-col">{{ "{:,.2f}".format(result.sell_price_low) }}</td>
+                
+                {# Columna 7/8: Venta Actual (Global/Regional) #}
+                <td class="isk-col">{{ "{:,.2f}".format(result.sell_price_current) }}</td>
 
-                <td>{{ "{:,.0f}".format(result.volume_10d) }}</td>
+                {# Columna 8/9: Volumen 10D (Global/Regional) #}
+                <td class="isk-col">{{ "{:,.0f}".format(result.volume_10d) }}</td>
 
+                {# Columna 9/10: Botón Análisis (Global/Regional) #}
                 <td>
                     <button
                         data-type-id="{{ result.type_id }}"
@@ -66,6 +84,7 @@
                     </button>
                 </td>
 
+                {# Columna 10/11: Item (Global/Regional) #}
                 <td class="item-col">{{ result.item_name }} ({{ result.quantity }})</td>
             </tr>
         {% endfor %}

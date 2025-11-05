@@ -22,16 +22,16 @@
             <tr>
                 <td class="item-col">{{ result.item_name }}</td>
                 <td class="market-col">{{ result.market }}</td>
-                <td>{{ "{:,.2f}".format(result.buy_price) }}</td>
-                <td>{{ "{:,.2f}".format(result.sell_price) }}</td>
-                <td class="{{ 'positive' if result.profit_per_unit > 0 else 'negative' }}">
+                <td class="isk-col">{{ "{:,.2f}".format(result.buy_price) }}</td>
+                <td class="isk-col">{{ "{:,.2f}".format(result.sell_price) }}</td>
+                <td class="isk-col {{ 'positive' if result.profit_per_unit > 0 else 'negative' }}">
                     {{ "{:,.2f}".format(result.profit_per_unit) }}
                 </td>
-                <td class="{{ 'positive' if result.roi_percent > 0 else 'negative' }}">
+                <td class="isk-col {{ 'positive' if result.roi_percent > 0 else 'negative' }}">
                     {{ "{:,.2f}".format(result.roi_percent) }}%
                 </td>
-                <td>{{ "{:,.0f}".format(result.volume_10d) }}</td>
-                <td class="{{ 'positive' if result.spread_percent > 0 else 'negative' }}">
+                <td class="isk-col">{{ "{:,.0f}".format(result.volume_10d) }}</td>
+                <td class="isk-col {{ 'positive' if result.spread_percent > 0 else 'negative' }}">
                     {{ "{:,.2f}".format(result.spread_percent) }}%
                 </td>
             </tr>
