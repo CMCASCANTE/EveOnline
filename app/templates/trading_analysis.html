@@ -1,0 +1,93 @@
+{% extends "base_layout.html" %}
+
+{% block content %}
+<div class="container">
+    <div style="text-align: center;">
+        <h1 style="color: #4CAF50;">💰 Análisis de Trading Puro (Especulación Local)</h1>
+        <p class="last-update">Última Actualización ESI: {{ data.current_time }}</p>
+        
+        {% if error %}
+            <div style="padding: 20px; background-color: #ff333333; color: #ff3333; border-radius: 8px; font-weight: bold;">
+                {{ error }}
+            </div>
+            <div class="analyze-button-container">
+                <a href="{{ url_for('trading_analysis') }}" style="text-decoration: none;">
+                    <button class="analyze-button" style="background-color: #555;">Recargar</button>
+                </a>
+                <a href="{{ url_for('home') }}" style="text-decoration: none;">
+                    <button class="analyze-button">Volver a Inicio</button>
+                </a>
+            </div>
+        {% else %}
+            
+            <p style="font-size: 1.1em; color: #ffeb3b; border-bottom: 1px solid #ffeb3b33; padding-bottom: 10px;">
+                Algoritmo: **Score de Liquidez** = Margen % (Spread) * Raíz(Volumen 10D). Los resultados se ordenan por este Score.
+            </p>
+            
+            <div class="tab-menu">
+                {% for market_name in data.market_results.keys() %}
+                    <button class="tab-button" onclick="openTab(event, '{{ market_name }}Trading')">
+                        {{ market_name }} (Top 5)
+                    </button>
+                {% endfor %}
+            </div>
+
+            {% for market_name, results in data.market_results.items() %}
+                <div id="{{ market_name }}Trading" class="tab-content">
+                    <h2>TOP 5 Oportunidades en {{ market_name }}</h2>
+                    {% if results %}
+                        <table class="data-table regional-table">
+                            <thead>
+                                <tr>
+                                    {% for header in data.headers %}
+                                        <th {% if 'Item' in header %}class="item-col"{% endif %}>{{ header }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for result in results %}
+                                    <tr>
+                                        <td style="color: #00bfff; font-weight: bold;">
+                                            {{ "{:,.0f}".format(result.profitability_score) }}
+                                        </td>
+                                        <td class="isk-col {{ 'positive' if result.spread_percent >= 5 else 'negative' }}">
+                                            {{ "{:,.2f}".format(result.spread_percent) }}%
+                                        </td>
+                                        <td class="positive">
+                                            {{ "{:,.0f}".format(result.spread_isk) }}
+                                        </td>
+                                        <td style="color: #ff3333;">
+                                            {{ "{:,.2f}".format(result.max_buy_price) }}
+                                        </td>
+                                        <td style="color: #00ff00;">
+                                            {{ "{:,.2f}".format(result.min_sell_price) }}
+                                        </td>
+                                        <td>
+                                            {{ "{:,.0f}".format(result.volume_10d) }}
+                                        </td>
+                                        <td class="item-col">
+                                            {{ result.item_name }} ({{ result.quantity }})
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p style="text-align: center; color: #888;">
+                            No se encontraron oportunidades de Trading Puro (> 2% Spread, > 0 Volumen) en {{ market_name }} para los items analizados.
+                        </p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            
+            <div class="analyze-button-container">
+                <a href="{{ url_for('trading_analysis') }}" style="text-decoration: none;">
+                    <button class="analyze-button">Recargar Análisis</button>
+                </a>
+            </div>
+            
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

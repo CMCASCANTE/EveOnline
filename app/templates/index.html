@@ -20,6 +20,11 @@
             color: #00bfff;
             font-size: 3em;
             text-shadow: 0 0 10px #00bfff99;
+            margin-bottom: 50px;
+        }
+        .button-group {
+            display: flex;
+            gap: 20px;
         }
         .start-button {
             background-color: #00bfff;
@@ -32,22 +37,35 @@
             transition: background-color 0.3s, transform 0.1s;
             text-transform: uppercase;
             font-weight: bold;
-            margin-top: 30px;
+        }
+        .start-button.trading {
+             background-color: #4CAF50; /* Verde para Trading */
+             color: black;
         }
         .start-button:hover {
             background-color: #0099cc;
             transform: translateY(-2px);
         }
+        .start-button.trading:hover {
+            background-color: #6bcc6e;
+        }
     </style>
 </head>
 <body>
 
-    <h1>EVE LP MARKET ANALYZER</h1>
-    <a href="{{ url_for('loading') }}">
-        <button class="start-button">
-            INICIAR ANÁLISIS ESI
-        </button>
-    </a>
+    <h1>EVE MARKET ANALYZER</h1>
+    <div class="button-group">
+        <a href="{{ url_for('loading') }}">
+            <button class="start-button">
+                📈 INICIAR RENTABILIDAD LP
+            </button>
+        </a>
+        <a href="{{ url_for('loading_trading') }}">
+            <button class="start-button trading">
+                💰 INICIAR TRADING PURO
+            </button>
+        </a>
+    </div>
 
 </body>
 </html>
