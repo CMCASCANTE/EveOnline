@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cargando Análisis ESI...</title>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+        .loader {
+            border: 8px solid #30363d;
+            border-top: 8px solid #00bfff;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        h2 {
+            margin-top: 20px;
+            color: #8b949e;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="loader"></div>
+    <h2>Cargando datos del mercado de EVE (ESI)...</h2>
+    <p style="color: #8b949e; font-size: 0.9em; margin-top: 5px;">Esto puede tardar unos segundos, por favor espera.</p>
+
+    <script>
+        // Redirigir al endpoint de análisis inmediatamente
+        window.onload = function() {
+            window.location.href = "{{ url_for('analyze') }}";
+        };
+    </script>
+
+</body>
+</html>

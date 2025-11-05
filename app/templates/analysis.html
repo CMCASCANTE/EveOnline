@@ -1,0 +1,56 @@
+{% extends 'base_layout.html' %} 
+
+{% block title %}Resultados del Análisis{% endblock %}
+
+{% block content %}
+
+<div class="container">
+    {% if error %}
+        <h1 class="negative">❌ Error al Ejecutar el Análisis:</h1>
+        <p class="negative">{{ error }}</p>
+    {% else %}
+        <h1>✅ ANÁLISIS DE RENTABILIDAD LP FINALIZADO</h1>
+        <p class="meta-info">Datos actualizados: {{ data.current_time }}</p>
+
+        <div style="margin-bottom: 20px;">
+            <a href="{{ url_for('home') }}">
+                <button class="reload-button">
+                    ⬅️ INICIAR NUEVA BÚSQUEDA
+                </button>
+            </a>
+        </div>
+        
+        {% set current_results = data.global_max_isk %}
+        {% set headers = data.headers %}
+        <h2>TABLA 5: TOP {{ data.global_max_isk|length }} RENTABILIDAD MÁXIMA GLOBAL</h2>
+        {% include 'table_template.html' with context %}
+        
+        {% set current_results = data.global_liquidez_media %}
+        <h2>TABLA 6: TOP {{ data.global_liquidez_media|length }} LIQUIDEZ MEDIA (ISK/LP AVG ≥ 1,000)</h2>
+        {% include 'table_template.html' with context %}
+
+        {% set current_results = data.global_liquidez_alta %}
+        <h2>TABLA 7: TOP {{ data.global_liquidez_alta|length }} LIQUIDEZ ALTA (ISK/LP AVG ≥ 2,000)</h2>
+        {% include 'table_template.html' with context %}
+
+        <h1>📊 Análisis por Mercado Regional</h1>
+
+        {% for market_name, results in data.market_results.items() %}
+            {% set current_results = results %}
+            <h2>{{ market_name }} (Top {{ results|length }})</h2>
+            {% include 'table_template.html' with context %}
+        {% endfor %}
+
+    {% endif %}
+
+    <div style="margin-top: 50px;">
+        <a href="{{ url_for('home') }}">
+            <button class="reload-button">
+                ⬅️ INICIAR NUEVA BÚSQUEDA
+            </button>
+        </a>
+    </div>
+
+</div>
+
+{% endblock %}
