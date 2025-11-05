@@ -3,314 +3,371 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}EVE LP Market Analyzer{% endblock %}</title>
-    <!-- Carga de Tailwind CSS para estilos de modal y modernización -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
+    <title>EVE LP Market Analyzer</title>
     <style>
-        /* Estilo EVE Online (Mantenido y adaptado) */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-        
+        /* Estilos base para la interfaz de análisis de mercado */
         body {
-            background-color: #0d1117;
-            color: #ffffff;
-            font-family: 'Inter', sans-serif; /* Usamos Inter como estándar */
+            font-family: 'Inter', Arial, sans-serif;
+            background-color: #1a1a1a;
+            color: #ccc;
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            line-height: 1.6;
         }
         .container {
-            max-width: 95%;
-            margin: auto;
+            max-width: 90%;
+            margin: 20px auto;
+            background-color: #2c2c2c;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            padding: 20px;
         }
         h1, h2 {
-            color: #00bfff;
-            border-bottom: 2px solid #00bfff;
+            color: #4CAF50; /* Verde EVE Online */
+            text-align: center;
+            border-bottom: 2px solid #4CAF5033;
             padding-bottom: 10px;
-            margin-top: 30px;
+            margin-top: 0;
         }
-        h2 {
-            font-size: 1.5em;
-            border-bottom: 1px solid #30363d;
-        }
-        .meta-info {
-            font-size: 0.8em;
-            color: #8b949e;
+        .last-update {
+            text-align: center;
+            font-size: 0.9em;
+            color: #888;
             margin-bottom: 20px;
         }
-        
-        /* Estilo de la tabla */
+
+        /* Estilos de la Tabla */
         .data-table {
             width: 100%;
             border-collapse: collapse;
+            margin-bottom: 30px;
             font-size: 0.85em;
             table-layout: auto;
+            background-color: #383838;
+            border-radius: 8px;
+            overflow: hidden; 
         }
         .data-table th, .data-table td {
-            border: 1px solid #30363d;
-            padding: 8px 6px;
+            padding: 10px 8px;
             text-align: right;
-            white-space: nowrap;
+            border-bottom: 1px solid #444;
         }
         .data-table th {
-            background-color: #161b22;
-            color: #ffffff;
-            text-align: center;
-            font-weight: normal;
+            background-color: #4CAF50;
+            color: #1a1a1a;
+            font-weight: bold;
+            text-transform: uppercase;
+            position: sticky;
+            top: 0;
         }
-        /* Alineación específica de columnas */
-        .data-table .item-col {
-            text-align: left;
-            width: 20%; /* Reducido para hacer espacio al botón IA */
-            white-space: normal;
-        }
-        .data-table .market-col {
-            text-align: center;
-            width: 8%;
-        }
-        /* Colores de rentabilidad */
-        .positive { color: #00ff00; } 
-        .negative { color: #ff0000; } 
-        .reload-button {
-            background-color: #30363d;
-            color: #ffffff;
-            border: 1px solid #8b949e;
-            padding: 10px 20px;
-            font-size: 1em;
-            cursor: pointer;
-            border-radius: 5px;
-            transition: background-color 0.3s;
-        }
-        .reload-button:hover {
-            background-color: #40464d;
+        .data-table tbody tr:hover {
+            background-color: #4a4a4a;
         }
 
-        /* NUEVOS ESTILOS PARA EL BOTÓN IA */
-        .ia-button {
-            background-color: #38a169; /* Verde / Ciano para IA */
+        /* Alineación y Colores */
+        .item-col { text-align: left; max-width: 250px; }
+        .market-col { text-align: center; font-weight: bold; }
+        .isk-col { font-weight: 600; }
+        .positive { color: #00ff00; } /* Verde para rentabilidad positiva */
+        .negative { color: #ff3333; } /* Rojo para pérdidas */
+
+        /* Estilos Específicos para el Botón de ESI */
+        .esi-button { 
+            background-color: #1E90FF; /* Azul brillante para ESI */
             color: white;
             border: none;
-            padding: 5px 8px;
-            font-size: 0.75em;
+            padding: 6px 10px;
+            border-radius: 6px;
             cursor: pointer;
-            border-radius: 4px;
             transition: background-color 0.2s;
             font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+            white-space: nowrap;
         }
-        .ia-button:hover {
-            background-color: #2f855a;
+        .esi-button:hover {
+            background-color: #0077cc;
         }
 
-        /* ESTILOS DEL MODAL (Aprovechando Tailwind) */
-        .modal-overlay {
-            background-color: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(4px);
-            z-index: 50;
+        /* Estilo para Tablas Regionales */
+        .regional-table .market-col {
+            display: none; 
+        }
+
+        /* Modal para la ESI */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
         }
         .modal-content {
-            background-color: #161b22;
-            border: 1px solid #30363d;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-            max-height: 90vh; 
+            background-color: #383838;
+            margin: 10% auto;
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.7);
+            position: relative;
+            animation: slideIn 0.3s ease-out;
         }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            transition: color 0.2s;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: #fff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .esi-loading-spinner { 
+            text-align: center;
+            padding: 30px;
+            font-size: 1.2em;
+            color: #4CAF50;
+        }
+        .esi-loading-spinner span {
+            display: block;
+            margin-top: 10px;
+        }
+        
+        /* Botón principal */
+        .analyze-button-container {
+            text-align: center;
+            margin: 40px 0;
+        }
+        .analyze-button {
+            background-color: #4CAF50;
+            color: black;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .analyze-button:hover {
+            background-color: #6bcc6e;
+            transform: translateY(-2px);
+        }
+        
+        /* Estilos del layout de Análisis */
+        .tab-menu {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .tab-button {
+            background-color: #444;
+            color: #eee;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+            font-weight: bold;
+        }
+        .tab-button.active {
+            background-color: #4CAF50;
+            color: black;
+            box-shadow: 0 0 10px #4CAF5055;
+        }
+        .tab-button:hover:not(.active) {
+            background-color: #555;
+        }
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px auto;
+                padding: 15px;
+                border-radius: 0;
+                max-width: 100%;
+            }
+            .data-table {
+                font-size: 0.7em;
+            }
+            .data-table th, .data-table td {
+                padding: 8px 4px;
+            }
+            .esi-button {
+                padding: 4px 6px;
+                font-size: 0.9em;
+            }
+        }
+
     </style>
 </head>
 <body>
 
-{% block content %}{% endblock %}
+    {% block content %}{% endblock %}
 
-<!-- Modal de Resumen de Pedidos (Hidden by default) -->
-<div id="order-summary-modal" class="modal-overlay fixed inset-0 flex items-center justify-center p-4 hidden">
-    <div class="modal-content w-full max-w-2xl mx-auto rounded-xl p-6 relative">
-        
-        <!-- Encabezado del Modal -->
-        <div class="flex justify-between items-center border-b pb-3 mb-4 border-gray-700">
-            <h3 id="modal-title" class="text-xl font-bold text-[#00bfff]">Resumen de Pedidos</h3>
-            <button onclick="closeModal()" class="text-gray-500 hover:text-white transition duration-150">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-            </button>
-        </div>
-
-        <!-- Cuerpo del Modal -->
-        <div class="overflow-y-auto" style="max-height: 70vh;">
-            <!-- Indicador de carga -->
-            <p id="modal-status" class="text-center text-yellow-400 mb-4 flex items-center justify-center space-x-2 hidden">
-                <!-- SVG para el spinner -->
-            </p>
-            
-            <!-- Contenido de la IA -->
-            <div id="modal-body" class="text-sm">
-                <!-- El resumen generado por Gemini se insertará aquí -->
+    <div id="aiModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Análisis de Mercado ESI</h2>
+            <div id="modalBody">
+                <div class="esi-loading-spinner">
+                    <img src="https://placehold.co/50x50/1E90FF/000?text=ESI" alt="Spinner de Carga ESI" style="border-radius: 50%; margin-bottom: 10px;">
+                    <span>Analizando Órdenes en Jita...</span>
+                </div>
             </div>
         </div>
-
-        <!-- Pie de Modal -->
-        <div class="border-t pt-4 mt-4 border-gray-700 flex justify-end">
-             <button 
-                onclick="closeModal()" 
-                class="px-4 py-2 text-sm font-semibold rounded-lg bg-gray-700 hover:bg-gray-600 transition duration-150 text-white"
-            >
-                Cerrar
-            </button>
-        </div>
     </div>
-</div>
 
-
-<!-- Lógica JavaScript para ESI y Gemini -->
-<script>
-    // Configuración inicial de la API Key (debe estar vacía)
-    const API_KEY = "";
-    const ESI_BASE_URL = 'https://esi.evetech.net/latest';
-    const JITA_REGION_ID = 10000002; // The Forge
-
-
-
-    // Antigua: function generateOrderSummary(typeId, encodedItemName) { ... }
-    // Nueva:
-    function handleOrderAnalysis(buttonElement) {
-        // 1. Leer los datos del botón
-        const typeId = buttonElement.dataset.typeId;
-        const itemName = buttonElement.dataset.itemName; // Ya está escapado por Jinja
-
-        // 2. Llamar a la lógica de la API
-        generateOrderSummary(typeId, itemName);
-    }
-
-    
-
-    /**
-     * Función principal: 1. Fetch ESI Orders -> 2. Call Gemini -> 3. Show Modal
-     */
-    async function generateOrderSummary(itemId, itemName) {
-        const modalTitle = document.getElementById('modal-title');
-        const modalBody = document.getElementById('modal-body');
-        const modalStatus = document.getElementById('modal-status');
-        const orderSummaryModal = document.getElementById('order-summary-modal');
-
-        // 1. Mostrar Modal y estado de carga
-        modalTitle.textContent = `Analizando Pedidos de Venta: ${itemName}`;
-        modalBody.innerHTML = '';
-        modalStatus.classList.remove('hidden');
-        modalStatus.innerHTML = `
-            <svg class="animate-spin h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span>Obteniendo datos ESI (Jita)...</span>
-        `;
-        orderSummaryModal.classList.remove('hidden');
-
-        let rawOrders;
-        try {
-            // 2. FETCH DATOS REALES DE EVE ESI (solo Jita, órdenes de venta)
-            const esiUrl = `${ESI_BASE_URL}/markets/${JITA_REGION_ID}/orders/?datasource=tranquility&order_type=sell&type_id=${itemId}`;
-            const esiResponse = await fetch(esiUrl);
-            
-            if (!esiResponse.ok) {
-                throw new Error(`Error ESI: HTTP ${esiResponse.status}.`);
-            }
-            rawOrders = await esiResponse.json(); 
-
-        } catch (error) {
-            console.error("Error al obtener datos ESI:", error);
-            modalStatus.textContent = `Error ESI: ${error.message}. No se pudo obtener la data del mercado.`;
-            return;
-        }
-
-        // 3. PROCESAMIENTO DE DATOS PARA GEMINI
-        if (rawOrders.length === 0) {
-             modalBody.innerHTML = `<p class="text-red-400">No se encontraron pedidos de venta activos para ${itemName} en The Forge (Jita).</p>`;
-             modalStatus.classList.add('hidden');
-             return;
-        }
-
-        // Ordenar por precio ascendente (los más baratos, que reflejan la presión de venta)
-        rawOrders.sort((a, b) => a.price - b.price);
-
-        const lowestPrice = rawOrders[0].price;
-        const totalVolume = rawOrders.reduce((sum, order) => sum + order.volume_remain, 0);
-
-        let promptContext = `ANÁLISIS DE MERCADO: ${itemName}\n\n`;
-        promptContext += `Región: The Forge (Jita). Total Pedidos Encontrados: ${rawOrders.length}. Volumen Total Disponible: ${totalVolume.toLocaleString('es-ES')} unidades.\n`;
-        promptContext += `Precio Más Bajo Actual: ${lowestPrice.toLocaleString('es-ES', { maximumFractionDigits: 2 })} ISK.\n\n`;
-        promptContext += "Los 10 pedidos de venta más baratos (precio, volumen, ID de estación):\n";
-
-        // Listar las primeras 10 órdenes más relevantes
-        rawOrders.slice(0, 10).forEach(order => {
-            promptContext += `- ${order.price.toLocaleString('es-ES', { maximumFractionDigits: 2 })} ISK | Vol: ${order.volume_remain.toLocaleString('es-ES')} | Estación ID: ${order.location_id}\n`;
-        });
-
-        // 4. PREPARAR Y LLAMAR A GEMINI
-        modalStatus.innerHTML = `
-            <svg class="animate-spin h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span>Generando resumen analítico con IA...</span>
-        `;
-
-        const systemPrompt = "Actúa como un analista de mercado experto de EVE Online. Basado en los datos crudos proporcionados (precios y volúmenes en Jita), genera un resumen conciso (máximo 150 palabras) y una recomendación clara de trading (Comprar ahora/Vender ahora/Esperar). Evalúa la liquidez (volumen total) y la presión de venta (pedidos baratos).";
-        const userQuery = `Analiza la siguiente información de pedidos de EVE Online (ya procesada). Genera el resumen y la recomendación. Datos:\n\n${promptContext}`;
+    <script>
+        // Referencia al modal y al cuerpo
+        const modal = document.getElementById('aiModal');
+        const modalBody = document.getElementById('modalBody');
+        const modalTitle = document.getElementById('modalTitle');
         
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
+        // --- Lógica del Botón (Paso 1: Leer atributos de datos) ---
 
-        const payload = {
-            contents: [{ parts: [{ text: userQuery }] }],
-            systemInstruction: {
-                parts: [{ text: systemPrompt }]
-            },
-        };
-
-        // 5. LLAMADA A LA API DE GEMINI
-        try {
-            const response = await callApiWithRetry(apiUrl, payload);
-            const text = response.candidates?.[0]?.content?.parts?.[0]?.text || 'Error: La IA no devolvió un resumen.';
-                
-            // Mostrar el resumen generado
-            modalBody.innerHTML = `<p class="text-gray-300 whitespace-pre-line p-4 rounded-lg bg-gray-800 border border-gray-700">${text}</p>`;
-            modalStatus.classList.add('hidden');
-
-        } catch (error) {
-            console.error("Error al llamar a Gemini:", error);
-            modalStatus.textContent = `Error de conexión con la IA. Inténtalo de nuevo.`;
+        /**
+         * Maneja el clic en el botón de Análisis ESI, leyendo los atributos de datos 
+         * para obtener el type_id y el item_name.
+         * @param {HTMLElement} buttonElement El botón que fue presionado.
+         */
+        function handleOrderAnalysis(buttonElement) {
+            const typeId = buttonElement.dataset.typeId;
+            const itemName = buttonElement.dataset.itemName; 
+            
+            // Abre el modal y comienza el proceso de solicitud al servidor
+            generateOrderSummary(typeId, itemName);
         }
-    }
 
-    /**
-     * Función auxiliar para simular fetch con reintento (Backoff Exponencial)
-     */
-    async function callApiWithRetry(url, payload, retries = 3, delay = 1000) {
-        for (let i = 0; i < retries; i++) {
+        // --- Lógica Principal de la API (Paso 2: Llamada al servidor de Flask) ---
+
+        /**
+         * Muestra el modal, muestra la carga y hace la llamada AJAX al servidor de Flask.
+         * @param {string} typeId El ID del tipo de item.
+         * @param {string} itemName El nombre del item.
+         */
+        async function generateOrderSummary(typeId, itemName) {
+            modalTitle.textContent = `Análisis de Órdenes: ${itemName}`;
+            // Mensaje de carga actualizado para reflejar la consulta global
+            modalBody.innerHTML = `
+                <div class="esi-loading-spinner">
+                    <img src="https://placehold.co/50x50/1E90FF/000?text=ESI" alt="Spinner de Carga" style="border-radius: 50%; margin-bottom: 10px;">
+                    <span>Consultando Órdenes Globales (Jita, Dodixie, Amarr, Hek)...</span>
+                </div>
+            `;
+            modal.style.display = 'block';
+
             try {
-                const response = await fetch(url, {
+                // LLAMADA ACTUALIZADA A LA NUEVA RUTA
+                const response = await fetch('/api/market-summary', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({ type_id: typeId, item_name: itemName })
                 });
 
-                if (response.status === 429 && i < retries - 1) {
-                    await new Promise(resolve => setTimeout(resolve, delay * (2 ** i)));
-                    continue;
+                if (!response.ok) {
+                    // Manejar errores HTTP (400, 500, etc.)
+                    const errorText = await response.text(); 
+                    let errorMessage = `HTTP error! status: ${response.status}.`;
+                    try {
+                         // Intentar parsear el JSON de error del servidor
+                         const errorData = JSON.parse(errorText);
+                         errorMessage = errorData.summary_html || errorMessage; // Usar el HTML de error si viene
+                    } catch (e) {
+                         errorMessage += ` Respuesta: ${errorText.substring(0, 100)}...`;
+                    }
+                    throw new Error(errorMessage);
                 }
 
-                if (!response.ok) {
-                     throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                const data = await response.json();
                 
-                return await response.json();
+                // Muestra el resumen de las órdenes (el HTML viene pre-formateado desde el servidor)
+                modalBody.innerHTML = data.summary_html;
 
             } catch (error) {
-                if (i === retries - 1) throw error;
+                console.error("Error al obtener resumen de mercado ESI:", error);
+                
+                // Si el mensaje de error es el HTML preformateado (como en el 500 del servidor), lo mostramos
+                const isHtmlError = error.message.includes("❌");
+                
+                modalBody.innerHTML = isHtmlError ? error.message : `
+                    <p style="color: #ff3333; font-weight: bold;">❌ Error de conexión con ESI/Servidor.</p>
+                    <p>${error.message}</p>
+                `;
             }
         }
-    }
 
-    // Función para cerrar el modal
-    function closeModal() {
-        document.getElementById('order-summary-modal').classList.add('hidden');
-    }
+        // --- Lógica de la interfaz ---
+        
+        function closeModal() {
+            modal.style.display = 'none';
+        }
 
-</script>
+        // Cerrar el modal al hacer clic fuera
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
 
+        /**
+         * Alterna entre las pestañas de resultados (Globales vs. Regionales).
+         */
+        function openTab(evt, tabId) {
+            var i, tabcontent, tablinks;
+            
+            // Ocultar todos los contenidos
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+                tabcontent[i].classList.remove("active");
+            }
+
+            // Desactivar todos los botones
+            tablinks = document.getElementsByClassName("tab-button");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].classList.remove("active");
+            }
+
+            // Mostrar el contenido de la pestaña actual y activar el botón
+            document.getElementById(tabId).style.display = "block";
+            document.getElementById(tabId).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+
+        // Abrir la primera pestaña al cargar la página (solo en analysis.html)
+        document.addEventListener("DOMContentLoaded", function() {
+            const firstTab = document.querySelector('.tab-button');
+            if (firstTab) {
+                firstTab.click();
+            }
+        });
+    </script>
 </body>
 </html>

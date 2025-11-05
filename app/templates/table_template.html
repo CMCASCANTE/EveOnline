@@ -27,7 +27,7 @@
                 </td>
                 <td>{{ "{:,.0f}".format(result.lp_cost) }}</td>
                 <td>{{ "{:,.0f}".format(result.isk_base_cost) }}</td>
-                
+
                 {% if not market_name %}
                     <td class="market-col">{{ result.market }}</td>
                 {% endif %}
@@ -35,24 +35,28 @@
                 <td>{{ "{:,.2f}".format(result.sell_price_avg) }}</td>
                 <td>{{ "{:,.2f}".format(result.sell_price_low) }}</td>
                 <td>{{ "{:,.2f}".format(result.sell_price_current) }}</td>
-                
+
                 <td>{{ "{:,.0f}".format(result.volume_10d) }}</td>
-                
-                <!-- Columna IA ANÁLISIS (Nueva) -->
+
+                <!-- Columna IA ANÁLISIS (Usa data-attributes y llama a handleOrderAnalysis) -->
                 <td>
-                    <!-- FIX: Usamos data-attributes para pasar los valores, evitando el error de sintaxis JS -->
-                    <button 
-                        data-type-id="{{ result.type_id }}" 
-                        data-item-name="{{ result.item_name | e }}" 
-                        onclick="handleOrderAnalysis(this)" 
-                        class="ia-button"
+                    <!-- 
+                        |e es el filtro 'escape', asegura que el nombre del item se inserte de forma segura en HTML 
+                        sin romper la estructura del data-attribute.
+                    -->
+                    <button
+                        data-type-id="{{ result.type_id }}"
+                        data-item-name="{{ result.item_name | e }}"
+                        onclick="handleOrderAnalysis(this)"
+                        class="esi-button"
                     >
-                        Ver Venta (IA)
-                    </button>
+                        Ver Órdenes (ESI)
+                    </button>                 
                 </td>
-                
+
                 <td class="item-col">{{ result.item_name }} ({{ result.quantity }})</td>
             </tr>
         {% endfor %}
     </tbody>
 </table>
+
